@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Map Next.js font CSS variables to Tailwind font utilities */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-cormorant);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Design tokens */
+@theme {
+  --color-stone-50: #FAF8F5;
+  --color-stone-100: #F2EDE6;
+  --color-stone-200: #E4D9CE;
+  --color-stone-300: #CBBFB0;
+  --color-stone-400: #A89485;
+  --color-stone-500: #8A7869;
+  --color-stone-600: #6E5E52;
+  --color-stone-700: #4A3D35;
+  --color-stone-800: #2C2520;
+  --color-stone-900: #1C1A17;
+  --color-stone-950: #0D0B09;
+
+  --color-amber-warm: #C4956A;
+  --color-amber-warm-light: #D4A87A;
+  --color-amber-warm-dim: #9A7048;
+}
+
+html {
+  /* Lenis overrides scroll behavior — keep this as auto */
+  scroll-behavior: auto;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #0D0B09;
+  color: #F2EDE6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Cinematic scrollbar — barely visible, warm amber */
+::-webkit-scrollbar {
+  width: 2px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(196, 149, 106, 0.35);
+  border-radius: 1px;
+}
+
+/* Warm selection */
+::selection {
+  background-color: rgba(196, 149, 106, 0.22);
+  color: #F2EDE6;
+}
+
+/* Lenis html class (added by Lenis on init) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Scroll indicator pulse keyframe */
+@keyframes pulse-down {
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50%       { opacity: 0.9; transform: translateY(5px); }
+}
+
+/* Section number counter label */
+.section-index {
+  font-variant-numeric: tabular-nums;
 }
