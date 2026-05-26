@@ -98,7 +98,7 @@ export const chapters: Chapter[] = [
     label: "Entrance",
     moments: [
       {
-        image: "/images/property/entrance-04.webp",
+        image: "/images/property/entrance-17.jpg",
         isTitle: true,
         eyebrow: "02",
         title: "The first room opens wide",
@@ -108,21 +108,21 @@ export const chapters: Chapter[] = [
         scrollVh: TITLE_VH,
       },
       {
-        image: "/images/property/entrance-06.webp",
+        image: "/images/property/entrance-16.jpg",
         title: "The living room",
         body: "Original windows bring in soft western light and frame the view back toward the porch and ridge.",
         align: "left",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/entrance-05.webp",
+        image: "/images/property/entrance-13.jpg",
         title: "The dining room",
         body: "The front of the home flows naturally between dining, living, and kitchen — no forced separation.",
         align: "right",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/entrance-01.webp",
+        image: "/images/property/entrance-15.jpg",
         title: "The fireplace wall",
         body: "Historic texture anchors the room without making the space feel formal or frozen.",
         align: "left",
