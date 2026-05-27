@@ -98,7 +98,7 @@ export const chapters: Chapter[] = [
     label: "Entrance",
     moments: [
       {
-        image: "/images/property/entrance-17.jpg",
+        image: "/images/property/entrance-001.webp",
         isTitle: true,
         eyebrow: "02",
         title: "The first room opens wide",
@@ -108,21 +108,21 @@ export const chapters: Chapter[] = [
         scrollVh: TITLE_VH,
       },
       {
-        image: "/images/property/entrance-16.jpg",
+        image: "/images/property/entrance-002.webp",
         title: "The living room",
         body: "Original windows bring in soft western light and frame the view back toward the porch and ridge.",
         align: "left",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/entrance-13.jpg",
+        image: "/images/property/entrance-003.webp",
         title: "The dining room",
         body: "The front of the home flows naturally between dining, living, and kitchen — no forced separation.",
         align: "right",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/entrance-15.jpg",
+        image: "/images/property/entrance-004.webp",
         title: "The fireplace wall",
         body: "Historic texture anchors the room without making the space feel formal or frozen.",
         align: "left",
@@ -176,7 +176,7 @@ export const chapters: Chapter[] = [
     label: "Accommodations",
     moments: [
       {
-        image: "/images/property/accommodations-12.webp",
+        image: "/images/property/accommodations-001.webp",
         isTitle: true,
         eyebrow: "04",
         title: "The quiet side of the house",
@@ -186,28 +186,28 @@ export const chapters: Chapter[] = [
         scrollVh: TITLE_VH,
       },
       {
-        image: "/images/property/accommodations-23.webp",
+        image: "/images/property/accommodations-002.webp",
         title: "The guest room",
         body: "Currently used as an office, this room looks out toward the private backyard. The light is cooler on this side of the house.",
         align: "right",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/accommodations-13.webp",
+        image: "/images/property/accommodations-003.webp",
         title: "The guest bath",
         body: "Open shelving, a tub and shower, pedestal sink, and practical linen storage. Nothing overthought.",
         align: "left",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/accommodations-20.webp",
+        image: "/images/property/accommodations-004.webp",
         title: "The primary bedroom",
         body: "Corner windows bring in natural light and connect the room to the trees outside. Morning is slow here.",
         align: "right",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/accommodations-18.webp",
+        image: "/images/property/accommodations-005.webp",
         title: "The ensuite",
         body: "A double sink and glass-door walk-in shower give the primary suite a more generous feel than the square footage suggests.",
         align: "left",
@@ -222,7 +222,7 @@ export const chapters: Chapter[] = [
     label: "Surroundings",
     moments: [
       {
-        image: "/images/property/surroundings-14.webp",
+        image: "/images/property/surroundings-001.webp",
         isTitle: true,
         eyebrow: "05",
         title: "Wrapped in green",
@@ -232,21 +232,21 @@ export const chapters: Chapter[] = [
         scrollVh: TITLE_VH,
       },
       {
-        image: "/images/property/surroundings-09.webp",
+        image: "/images/property/surroundings-002.webp",
         title: "The side yard",
         body: "A private outdoor chill space sits just off the main living areas — sheltered, unprogrammed, and easy to use.",
         align: "right",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/surroundings-11.webp",
+        image: "/images/property/surroundings-003.webp",
         title: "The backyard",
         body: "The slope rises behind the house into mature trees and natural shade. The yard grows quieter the further you move through it.",
         align: "left",
         scrollVh: MOMENT_VH,
       },
       {
-        image: "/images/property/surroundings-02.webp",
+        image: "/images/property/surroundings-004.webp",
         title: "The fence line",
         body: "The property is wrapped in a tall privacy fence. Inside, it feels enclosed and quiet — more city garden than urban lot.",
         align: "right",

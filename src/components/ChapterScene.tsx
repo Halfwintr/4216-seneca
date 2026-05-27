@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   motion,
+  AnimatePresence,
   useScroll,
   useTransform,
+  useMotionValueEvent,
   type MotionValue,
 } from "framer-motion";
 import Image from "next/image";
@@ -174,13 +176,14 @@ function textAreaRadial(align: TextAlign, isTitle: boolean): string {
 
 // ─── Text positioning ─────────────────────────────────────────────────────────
 
+// bottom-28 on mobile keeps text above the MobileBar (~64px) with breathing room
 const containerClass: Record<TextAlign, string> = {
   left:
-    "absolute bottom-16 sm:bottom-20 md:bottom-24 left-6 sm:left-10 md:left-14 lg:left-20",
+    "absolute bottom-28 sm:bottom-20 md:bottom-24 left-6 sm:left-10 md:left-14 lg:left-20",
   center:
-    "absolute bottom-[26%] inset-x-0 flex flex-col items-center",
+    "absolute bottom-[30%] sm:bottom-[26%] inset-x-0 flex flex-col items-center",
   right:
-    "absolute bottom-16 sm:bottom-20 md:bottom-24 right-6 sm:right-10 md:right-14 lg:right-20",
+    "absolute bottom-28 sm:bottom-20 md:bottom-24 right-6 sm:right-10 md:right-14 lg:right-20",
 };
 
 const textAlignClass: Record<TextAlign, string> = {
@@ -265,6 +268,53 @@ function MomentImageLayer({
   );
 }
 
+// ─── MomentContent ────────────────────────────────────────────────────────────
+// Pure text/markup — shared by both the scroll-driven layer and the entrance hint.
+
+function MomentContent({ moment }: { moment: Moment }) {
+  const align = moment.align ?? "left";
+  return moment.isTitle ? (
+    <div className={`flex flex-col gap-5 ${textAlignClass[align]}`}>
+      {moment.eyebrow && (
+        <p className="text-[10px] tracking-[0.30em] uppercase font-sans font-light text-stone-300/65">
+          {moment.eyebrow}&thinsp;/&thinsp;{moment.title.split(" ")[0]}
+        </p>
+      )}
+      <h2
+        className="font-serif font-light italic text-stone-50 leading-none drop-shadow-sm"
+        style={{ fontSize: "clamp(3rem, 7.5vw, 5.75rem)" }}
+      >
+        {moment.title}
+      </h2>
+      {moment.subtitle && (
+        <p
+          className="font-sans font-light text-stone-200/80 leading-relaxed max-w-lg drop-shadow-sm"
+          style={{ fontSize: "clamp(0.9rem, 1.7vw, 1.05rem)" }}
+        >
+          {moment.subtitle}
+        </p>
+      )}
+    </div>
+  ) : (
+    <div className={`flex flex-col gap-3 ${textAlignClass[align]}`}>
+      <h3
+        className="font-serif font-light italic text-stone-50 leading-tight drop-shadow-sm"
+        style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)" }}
+      >
+        {moment.title}
+      </h3>
+      {moment.body && (
+        <p
+          className="font-sans font-light text-stone-200/85 leading-relaxed max-w-md drop-shadow-sm"
+          style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)" }}
+        >
+          {moment.body}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── MomentTextLayer ─────────────────────────────────────────────────────────
 
 interface MomentTextLayerProps {
@@ -280,7 +330,6 @@ function MomentTextLayer({ slot, totalScrollVh, scrollYProgress }: MomentTextLay
   const [pKeys, oKeys] = makeTextKeyframes(slot, totalScrollVh);
   const opacity = useTransform(scrollYProgress, pKeys, oKeys);
 
-  // Text enters from slightly below, exits upward — restrained, not theatrical
   const textInFrac  = fp(slot.startVh + (moment.isTitle ? TEXT_MARGIN_TITLE  : TEXT_MARGIN_MOMENT), totalScrollVh);
   const textOutFrac = fp(slot.endVh   - (moment.isTitle ? TEXT_MARGIN_TITLE  : TEXT_MARGIN_MOMENT), totalScrollVh);
   const y = useTransform(
@@ -295,60 +344,79 @@ function MomentTextLayer({ slot, totalScrollVh, scrollYProgress }: MomentTextLay
       className="absolute inset-0 z-20 pointer-events-none"
       style={{ opacity }}
     >
-      {/* Per-moment text-area radial — a soft pool of darkness around the copy */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{ background: textAreaRadial(align, !!moment.isTitle) }}
       />
-
       <motion.div className={`${containerClass[align]} max-w-2xl`} style={{ y }}>
-        {moment.isTitle ? (
-          // ── TITLE CARD MODE ───────────────────────────────────────────
-          // Large editorial serif heading + atmospheric subtitle.
-          <div className={`flex flex-col gap-5 ${textAlignClass[align]}`}>
-            {moment.eyebrow && (
-              <p className="text-[10px] tracking-[0.30em] uppercase font-sans font-light text-stone-300/65">
-                {moment.eyebrow}&thinsp;/&thinsp;{moment.title.split(" ")[0]}
-              </p>
-            )}
-            <h2
-              className="font-serif font-light italic text-stone-50 leading-none drop-shadow-sm"
-              style={{ fontSize: "clamp(3rem, 7.5vw, 5.75rem)" }}
-            >
-              {moment.title}
-            </h2>
-            {moment.subtitle && (
-              <p
-                className="font-sans font-light text-stone-200/80 leading-relaxed max-w-lg drop-shadow-sm"
-                style={{ fontSize: "clamp(0.9rem, 1.7vw, 1.05rem)" }}
-              >
-                {moment.subtitle}
-              </p>
-            )}
-          </div>
-        ) : (
-          // ── MOMENT TEXT MODE ──────────────────────────────────────────
-          // Smaller serif heading + grounded sans body.
-          <div className={`flex flex-col gap-3 ${textAlignClass[align]}`}>
-            <h3
-              className="font-serif font-light italic text-stone-50 leading-tight drop-shadow-sm"
-              style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)" }}
-            >
-              {moment.title}
-            </h3>
-            {moment.body && (
-              <p
-                className="font-sans font-light text-stone-200/85 leading-relaxed max-w-md drop-shadow-sm"
-                style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)" }}
-              >
-                {moment.body}
-              </p>
-            )}
-          </div>
-        )}
+        <MomentContent moment={moment} />
       </motion.div>
     </motion.div>
+  );
+}
+
+// ─── EntranceHint ─────────────────────────────────────────────────────────────
+//
+// Time-based animation that plays for slot 0 of every chapter whenever the
+// chapter is at its starting position (progress ≈ 0). This covers two cases:
+//
+//   1. Page load — the first scene should animate in without any scrolling.
+//   2. Nav-jump — clicking a nav item snaps to chapter start; the hint
+//      makes it clear there is content and invites the user to scroll.
+//
+// Handoff: the hint fades out once scroll progress crosses HINT_DISMISS.
+// The scroll-driven MomentTextLayer opacity is 0 at progress=0 and ramps up,
+// so the two layers cross-fade naturally at the dismiss threshold.
+//
+// Reset: if progress drops back below HINT_RESET (e.g. user nav-jumps back),
+// the hint reactivates so the affordance replays.
+
+const HINT_DISMISS = 0.06; // progress fraction at which hint starts to exit
+const HINT_RESET   = 0.01; // progress fraction at which hint re-arms on nav-back
+
+interface EntranceHintProps {
+  slot: Slot;
+  scrollYProgress: MotionValue<number>;
+}
+
+function EntranceHint({ slot, scrollYProgress }: EntranceHintProps) {
+  const { moment } = slot;
+  const align = moment.align ?? "left";
+
+  // `dismissed` latches true when the user scrolls past HINT_DISMISS,
+  // and resets to false when they return to near the chapter start.
+  const [dismissed, setDismissed] = useState(false);
+
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    if (!dismissed && v > HINT_DISMISS) setDismissed(true);
+    if (dismissed  && v < HINT_RESET)  setDismissed(false);
+  });
+
+  return (
+    <AnimatePresence>
+      {!dismissed && (
+        <motion.div
+          key="entrance-hint"
+          className="absolute inset-0 pointer-events-none"
+          style={{ zIndex: 21 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.55, ease: "easeIn" } }}
+          transition={{ duration: 0.95, delay: 0.55, ease: "easeOut" }}
+        >
+          {/* Matching radial gradient so the hint reads identically to the scroll layer */}
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{ background: textAreaRadial(align, !!moment.isTitle) }}
+          />
+          <div className={`${containerClass[align]} max-w-2xl`}>
+            <MomentContent moment={moment} />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -440,6 +508,18 @@ export function ChapterScene({
             scrollYProgress={scrollYProgress}
           />
         ))}
+
+        {/*
+         * ── ENTRANCE HINT (z-21) ──────────────────────────────────────────
+         * Time-based animation for slot 0 only. Plays on page load and
+         * re-plays after any nav-jump back to this chapter's start.
+         * Dismisses automatically once the user starts scrolling.
+         */}
+        <EntranceHint
+          key={`hint-${chapter.id}`}
+          slot={slots[0]}
+          scrollYProgress={scrollYProgress}
+        />
 
       </div>
     </div>

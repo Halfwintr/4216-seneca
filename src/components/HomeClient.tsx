@@ -3,9 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ChapterScene } from "./ChapterScene";
-import { SceneNav } from "./SceneNav";
 import { ProgressIndicator } from "./ProgressIndicator";
-import { CTAButton } from "./CTAButton";
+import { NavRail } from "./NavRail";
+import { MobileBar } from "./MobileBar";
+import { ContactDrawer } from "./ContactDrawer";
+import { SealBadge } from "./SealBadge";
 import { chapters } from "./chapters";
 
 // ─── Nav items (chapters + the details anchor) ───────────────────────────────
@@ -74,12 +76,16 @@ function FormField({
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export function HomeClient() {
-  const [activeId, setActiveId] = useState<string>(chapters[0].id);
+  const [activeId, setActiveId]         = useState<string>(chapters[0].id);
+  const [drawerOpen, setDrawerOpen]     = useState(false);
   const detailsRef = useRef<HTMLElement>(null);
 
   const handleChapterEnter = useCallback((id: string) => {
     setActiveId(id);
   }, []);
+
+  const openDrawer  = useCallback(() => setDrawerOpen(true),  []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   // Detect when the Details section is the active view
   useEffect(() => {
@@ -97,13 +103,31 @@ export function HomeClient() {
     return () => observer.disconnect();
   }, []);
 
-  const activeNavIndex = NAV_ITEMS.findIndex((n) => n.id === activeId);
+  const activeNavIndex  = NAV_ITEMS.findIndex((n) => n.id === activeId);
+  const activeNavLabel  = NAV_ITEMS[activeNavIndex]?.label ?? NAV_ITEMS[0].label;
 
   return (
     <>
       <ProgressIndicator />
-      <SceneNav sections={NAV_ITEMS} activeIndex={activeNavIndex} />
-      <CTAButton />
+
+      {/* Property seal — top-center fixed, purely atmospheric */}
+      <SealBadge />
+
+      {/* Desktop: left-side editorial nav rail */}
+      <NavRail
+        sections={NAV_ITEMS}
+        activeIndex={activeNavIndex}
+        onContactClick={openDrawer}
+      />
+
+      {/* Mobile: floating bottom control bar */}
+      <MobileBar
+        activeLabel={activeNavLabel}
+        onContactClick={openDrawer}
+      />
+
+      {/* Cinematic contact/inquiry drawer (shared mobile + desktop) */}
+      <ContactDrawer isOpen={drawerOpen} onClose={closeDrawer} />
 
       <main>
         {/* ── CINEMATIC CHAPTERS (01–06) ─────────────────────────────────── */}
