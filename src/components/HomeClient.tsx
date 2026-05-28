@@ -117,11 +117,6 @@ export function HomeClient() {
         ))}
 
         {/* ── 07 DETAILS ─────────────────────────────────────────────────── */}
-        {/*
-         * Intentionally typographic — no background image.
-         * If desired, a single ambient <SplatScene sceneId="details" />
-         * at very low opacity would work here as an atmospheric depth layer.
-         */}
         <section
           ref={detailsRef}
           id="details"

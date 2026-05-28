@@ -14,12 +14,7 @@
 //   MOMENT_VH = 160  (regular moments — enough time to read two sentences)
 //   SHORT_VH  = 130  (short/list-style moments — neighborhood amenities, etc.)
 //
-// Image paths map to /public/images/property/*.webp.
-//
-// FUTURE: each Moment will also carry a `splat?: SplatSceneConfig` field.
-// When that field is present, <SplatScene /> replaces the <Image> in
-// MomentImageLayer. The scroll-animation wiring (opacity, scale, y) stays
-// identical.
+// Image paths map to /public/images/property/*.
 
 export type TextAlign = "left" | "center" | "right";
 
@@ -47,9 +42,9 @@ export interface Chapter {
 }
 
 // Default scroll heights (used in ChapterScene when scrollVh is omitted)
-export const TITLE_VH  = 130;
-export const MOMENT_VH = 160;
-export const SHORT_VH  = 130;
+export const TITLE_VH  = 156;
+export const MOMENT_VH = 192;
+export const SHORT_VH  = 156;
 
 export const chapters: Chapter[] = [
 

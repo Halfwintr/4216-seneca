@@ -1,14 +1,16 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   motion,
+  useMotionValueEvent,
   useScroll,
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import Image from "next/image";
 import { getMomentVh, type Chapter, type Moment, type TextAlign } from "./chapters";
+import { SceneImageLayer } from "./SceneImageLayer";
+import { getSplatSceneForImage, setActiveSplatIndex } from "./splatScenes";
 
 // ─── Animation constants (all in virtual-pixel vh units) ─────────────────────
 //
@@ -192,37 +194,33 @@ const textAlignClass: Record<TextAlign, string> = {
 // ─── MomentImageLayer ─────────────────────────────────────────────────────────
 
 interface MomentImageLayerProps {
+  chapterId: string;
   slot: Slot;
   totalScrollVh: number;
   scrollYProgress: MotionValue<number>;
   startsVisible: boolean;
+  preloadSplatUrl?: string;
   priority?: boolean;
 }
 
 function MomentImageLayer({
+  chapterId,
   slot,
   totalScrollVh,
   scrollYProgress,
   startsVisible,
+  preloadSplatUrl,
   priority = false,
 }: MomentImageLayerProps) {
   const [pKeys, oKeys] = makeImageKeyframes(slot, totalScrollVh, startsVisible);
   const opacity = useTransform(scrollYProgress, pKeys, oKeys);
 
-  // Gentle zoom: starts at 1.04, breathes to 1.0 during the slot's dwell time.
-  // Both values >1.0, so the image always overflows the container — the
-  // section's overflow:hidden clips the edges cleanly with zero gap risk.
+  // Map overall progress to 0..1 for this specific moment slot so each image
+  // gets its own local parallax timing.
   const slotStart = slot.startVh / totalScrollVh;
   const slotEnd   = slot.endVh   / totalScrollVh;
-  const scale = useTransform(scrollYProgress, [slotStart, slotEnd], [1.04, 1.0], { clamp: true });
-
-  // Barely-perceptible upward drift — adds spatial depth without distraction
-  const y = useTransform(
-    scrollYProgress,
-    [slotStart, slotEnd],
-    ["0.6%", "-0.6%"],
-    { clamp: true }
-  );
+  const slotProgress = useTransform(scrollYProgress, [slotStart, slotEnd], [0, 1], { clamp: true });
+  const splatScene = getSplatSceneForImage(slot.moment.image);
 
   return (
     <motion.div
@@ -230,37 +228,16 @@ function MomentImageLayer({
       className="absolute inset-0 pointer-events-none"
       style={{ opacity }}
     >
-      {/*
-       * ─── MOMENT IMAGE LAYER ─────────────────────────────────────────────
-       *
-       * FUTURE: Replace this motion.div + <Image> with:
-       *
-       *   <SplatScene
-       *     sceneId={chapter.id}
-       *     viewIndex={slot index}
-       *     scrollProgress={scrollYProgress}
-       *   />
-       *
-       * SplatScene should:
-       *   • Fill this container absolutely (z-0, below overlay and text)
-       *   • Drive its own camera animation from scrollProgress
-       *   • Handle loading state and fallback internally
-       * ──────────────────────────────────────────────────────────────────
-       */}
-      <motion.div
-        className="absolute inset-0"
-        style={{ scale, y, transformOrigin: "center center", willChange: "transform" }}
-      >
-        <Image
-          src={slot.moment.image}
-          alt=""
-          fill
-          sizes="100vw"
-          quality={88}
-          className="object-cover object-center"
-          priority={priority}
-        />
-      </motion.div>
+      <SceneImageLayer
+        sceneId={`${chapterId}_${slot.moment.title.toLowerCase().replace(/\s+/g, "_")}`}
+        imageSrc={slot.moment.image}
+        scrollProgress={slotProgress}
+        layerOpacity={opacity}
+        splatIndex={splatScene?.index}
+        splatUrl={splatScene?.url}
+        preloadSplatUrl={preloadSplatUrl}
+        priority={priority}
+      />
     </motion.div>
   );
 }
@@ -367,6 +344,7 @@ export function ChapterScene({
   onEnter,
 }: ChapterSceneProps) {
   const outerRef = useRef<HTMLDivElement>(null);
+  const [shouldRenderLayers, setShouldRenderLayers] = useState(chapterIndex === 0);
 
   // Pre-compute geometry: each moment's vh range and total scroll distance
   const { slots, totalScrollVh } = computeSlots(chapter.moments);
@@ -383,6 +361,19 @@ export function ChapterScene({
     offset: ["start start", "end end"],
   });
 
+  useMotionValueEvent(scrollYProgress, "change", (progress) => {
+    const currentVh = progress * totalScrollVh;
+    const nextActiveSlotIndex = slots.findIndex(
+      (slot) => currentVh >= slot.startVh && currentVh < slot.endVh
+    );
+
+    const activeSlot = slots[nextActiveSlotIndex === -1 ? Math.max(0, slots.length - 1) : nextActiveSlotIndex];
+    const activeSplatScene = activeSlot ? getSplatSceneForImage(activeSlot.moment.image) : undefined;
+    if (activeSplatScene) {
+      setActiveSplatIndex(activeSplatScene.index);
+    }
+  });
+
   // ── Nav: activate this chapter when it enters the viewport ────────────────
   // Threshold must be < viewport/chapterHeight to guarantee the observer fires.
   // Using 0.05 (5%) is safe for all chapter heights we generate (min ~4vh on
@@ -397,6 +388,22 @@ export function ChapterScene({
     observer.observe(el);
     return () => observer.disconnect();
   }, [chapter.id, onEnter]);
+
+  // Only mount the expensive full-screen image/text layers while this chapter is
+  // close enough to matter. The outer scroll height stays intact, so the scene
+  // timing and navigation do not shift.
+  useEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setShouldRenderLayers(entry.isIntersecting),
+      { rootMargin: "150% 0px", threshold: 0 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // First chapter starts with its first image fully visible (no fade-from-black
   // on page load). All subsequent chapters fade in over CHAPTER_IN_VH.
@@ -416,15 +423,17 @@ export function ChapterScene({
       <div className="sticky top-0 h-screen overflow-hidden">
 
         {/* ── IMAGE LAYERS (z-0) ─────────────────────────────────────────── */}
-        {slots.map((slot, i) => (
+        {shouldRenderLayers && slots.map((slot, i) => (
           <MomentImageLayer
             key={`img-${i}-${slot.moment.image}`}
+            chapterId={chapter.id}
             slot={slot}
             totalScrollVh={totalScrollVh}
             scrollYProgress={scrollYProgress}
             startsVisible={startsVisible && slot.isFirst}
-            // Priority-load the first image of the first two chapters
-            priority={chapterIndex <= 1 && slot.isFirst}
+            preloadSplatUrl={getSplatSceneForImage(slots[i + 1]?.moment.image ?? "")?.url}
+            // Priority-load only the opening hero image.
+            priority={chapterIndex === 0 && slot.isFirst}
           />
         ))}
 
@@ -432,7 +441,7 @@ export function ChapterScene({
         <ChapterOverlay />
 
         {/* ── TEXT LAYERS (z-20) ─────────────────────────────────────────── */}
-        {slots.map((slot, i) => (
+        {shouldRenderLayers && slots.map((slot, i) => (
           <MomentTextLayer
             key={`txt-${i}-${slot.moment.image}`}
             slot={slot}

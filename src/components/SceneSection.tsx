@@ -93,23 +93,6 @@ function SceneImage({
       className="absolute inset-0 pointer-events-none"
       style={{ opacity }}
     >
-      {/*
-       * ─── IMAGE LAYER ──────────────────────────────────────────────────────
-       * FUTURE: Replace this motion.div + <Image> with:
-       *
-       *   <SplatScene
-       *     sceneId="[section-id]"
-       *     viewIndex={index}
-       *     scrollProgress={scrollYProgress}
-       *   />
-       *
-       * SplatScene should:
-       *  • Fill this container (absolute inset-0)
-       *  • Apply its own camera / depth animation driven by scrollProgress
-       *  • Handle loading, fallback, and compositing internally
-       *  • Keep z-order below the vignette and content layers
-       * ──────────────────────────────────────────────────────────────────────
-       */}
       <motion.div
         className="absolute inset-0"
         style={{
@@ -147,10 +130,6 @@ export interface SceneSectionProps {
    *
    * When multiple images are supplied, the section's scrollYProgress is
    * divided evenly between them and each crossfades smoothly into the next.
-   *
-   * FUTURE: When Gaussian splat rendering is ready, remove `images` and
-   * instead render a <SplatScene /> per image slot (see SceneImage above).
-   * The section architecture and scroll-progress wiring remain identical.
    */
   images?: string[];
 
@@ -247,15 +226,6 @@ export function SceneSection({
       )}
 
       {hasImages ? (
-        /*
-         * ── IMAGE LAYERS ─────────────────────────────────────────────────
-         * Each SceneImage manages its own opacity (crossfade) and scale
-         * (zoom breath). They stack absolutely and crossfade in sequence.
-         *
-         * FUTURE: Swap the entire block below for one <SplatScene /> per
-         * image path. SceneImage is the per-slot integration seam.
-         * ──────────────────────────────────────────────────────────────────
-         */
         images.map((src, i) => (
           <SceneImage
             key={src}
@@ -268,12 +238,6 @@ export function SceneSection({
           />
         ))
       ) : (
-        /*
-         * ── GRADIENT BACKGROUND FALLBACK ─────────────────────────────────
-         * Used when no images are provided (e.g. the Details section).
-         * FUTURE: Replace with <SplatScene sceneId={id} /> here too.
-         * ──────────────────────────────────────────────────────────────────
-         */
         <motion.div
           aria-hidden
           className="absolute inset-x-0 top-0 w-full pointer-events-none"

@@ -26,9 +26,9 @@ export function LenisProvider({ children }: { children: ReactNode }) {
       infinite: false,
     });
 
-    setLenis(lenisInstance);
-
     let rafId: number;
+    const publishId = requestAnimationFrame(() => setLenis(lenisInstance));
+
     function raf(time: number) {
       lenisInstance.raf(time);
       rafId = requestAnimationFrame(raf);
@@ -36,6 +36,7 @@ export function LenisProvider({ children }: { children: ReactNode }) {
     rafId = requestAnimationFrame(raf);
 
     return () => {
+      cancelAnimationFrame(publishId);
       cancelAnimationFrame(rafId);
       lenisInstance.destroy();
     };
