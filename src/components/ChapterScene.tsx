@@ -10,6 +10,8 @@ import {
 } from "framer-motion";
 import { getMomentVh, type Chapter, type Moment, type TextAlign } from "./chapters";
 import { SceneImageLayer } from "./SceneImageLayer";
+import { ScrollFrameScene } from "./ScrollFrameScene";
+import { getFrameSceneForImage } from "./frameScenes";
 import { getSplatSceneForImage, setActiveSplatIndex } from "./splatScenes";
 
 // ─── Animation constants (all in virtual-pixel vh units) ─────────────────────
@@ -220,6 +222,7 @@ function MomentImageLayer({
   const slotStart = slot.startVh / totalScrollVh;
   const slotEnd   = slot.endVh   / totalScrollVh;
   const slotProgress = useTransform(scrollYProgress, [slotStart, slotEnd], [0, 1], { clamp: true });
+  const frameScene = getFrameSceneForImage(slot.moment.image);
   const splatScene = getSplatSceneForImage(slot.moment.image);
 
   return (
@@ -228,16 +231,25 @@ function MomentImageLayer({
       className="absolute inset-0 pointer-events-none"
       style={{ opacity }}
     >
-      <SceneImageLayer
-        sceneId={`${chapterId}_${slot.moment.title.toLowerCase().replace(/\s+/g, "_")}`}
-        imageSrc={slot.moment.image}
-        scrollProgress={slotProgress}
-        layerOpacity={opacity}
-        splatIndex={splatScene?.index}
-        splatUrl={splatScene?.url}
-        preloadSplatUrl={preloadSplatUrl}
-        priority={priority}
-      />
+      {frameScene ? (
+        <ScrollFrameScene
+          scenePath={frameScene.path}
+          scrollProgress={slotProgress}
+          layerOpacity={opacity}
+          priority={priority}
+        />
+      ) : (
+        <SceneImageLayer
+          sceneId={`${chapterId}_${slot.moment.title.toLowerCase().replace(/\s+/g, "_")}`}
+          imageSrc={slot.moment.image}
+          scrollProgress={slotProgress}
+          layerOpacity={opacity}
+          splatIndex={splatScene?.index}
+          splatUrl={splatScene?.url}
+          preloadSplatUrl={preloadSplatUrl}
+          priority={priority}
+        />
+      )}
     </motion.div>
   );
 }

@@ -39,12 +39,7 @@ export default function RootLayout({
       className={`${cormorant.variable} ${inter.variable} h-full`}
     >
       <head>
-        <link
-          rel="preload"
-          href="/gaussians/arrival-001.ksplat"
-          as="fetch"
-          crossOrigin="anonymous"
-        />
+        <link rel="preload" href="/scenes/arrival-001/frame-00.webp" as="image" />
       </head>
       <body className="min-h-full bg-stone-950 text-stone-100 font-sans antialiased">
         <LenisProvider>{children}</LenisProvider>

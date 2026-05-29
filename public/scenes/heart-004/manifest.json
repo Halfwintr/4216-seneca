@@ -1,0 +1,12 @@
+{
+  "id": "heart-004",
+  "splat": "/gaussians/heart-004.ksplat",
+  "frameCount": 60,
+  "zoom": 0.08,
+  "width": 1440,
+  "height": 810,
+  "pad": 2,
+  "ext": "webp",
+  "format": "webp",
+  "quality": 80
+}

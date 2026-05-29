@@ -3,17 +3,10 @@ export interface SplatSceneEntry {
   url: string;
 }
 
-export const SPLAT_SCENES: SplatSceneEntry[] = [
-  { image: "/images/property/arrival-001.webp", url: "/gaussians/arrival-001.ksplat" },
-  { image: "/images/property/arrival-002.webp", url: "/gaussians/arrival-002.ksplat" },
-  { image: "/images/property/arrival-003.webp", url: "/gaussians/arrival-003.ksplat" },
-  { image: "/images/property/arrival-004.webp", url: "/gaussians/arrival-004.ksplat" },
-  { image: "/images/property/entrance-17.jpg", url: "/gaussians/entrance-17.ksplat" },
-  { image: "/images/property/entrance-16.jpg", url: "/gaussians/entrance-16.ksplat" },
-  { image: "/images/property/entrance-13.jpg", url: "/gaussians/entrance-13.ksplat" },
-  { image: "/images/property/entrance-15.jpg", url: "/gaussians/entrance-15.ksplat" },
-  { image: "/images/property/heart-001.webp", url: "/gaussians/heart-001.ksplat" },
-];
+// Scenes are now served as pre-rendered frame sequences (see frameScenes.ts),
+// which removed the live WebGL splat viewers. This list is intentionally empty;
+// the splat path remains available for any scene not yet baked to frames.
+export const SPLAT_SCENES: SplatSceneEntry[] = [];
 
 export function getSplatSceneForImage(image: string): (SplatSceneEntry & { index: number }) | undefined {
   const index = SPLAT_SCENES.findIndex((scene) => scene.image === image);

@@ -1,0 +1,12 @@
+{
+  "id": "surroundings-02",
+  "splat": "/gaussians/surroundings-02.ksplat",
+  "frameCount": 60,
+  "zoom": 0.08,
+  "width": 1440,
+  "height": 810,
+  "pad": 2,
+  "ext": "webp",
+  "format": "webp",
+  "quality": 80
+}

@@ -1,0 +1,12 @@
+{
+  "id": "entrance-15",
+  "splat": "/gaussians/entrance-15.ksplat",
+  "frameCount": 60,
+  "zoom": 0.08,
+  "width": 1440,
+  "height": 810,
+  "pad": 2,
+  "ext": "webp",
+  "format": "webp",
+  "quality": 80
+}
