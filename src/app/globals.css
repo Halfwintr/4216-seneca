@@ -2,7 +2,7 @@
 
 /* Map Next.js font CSS variables to Tailwind font utilities */
 @theme inline {
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-figtree);
   --font-serif: var(--font-cormorant);
 }
 
@@ -23,6 +23,9 @@
   --color-amber-warm: #C4956A;
   --color-amber-warm-light: #D4A87A;
   --color-amber-warm-dim: #9A7048;
+
+  /* Figma redesign accent */
+  --color-highlight: #FFB144;
 }
 
 html {
@@ -75,6 +78,20 @@ html.lenis body {
 @keyframes pulse-down {
   0%, 100% { opacity: 0.4; transform: translateY(0); }
   50%       { opacity: 0.9; transform: translateY(5px); }
+}
+
+/* Scroll cue: a bright segment glides down the indicator line to nudge scrolling */
+@keyframes scroll-cue {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  18%  { opacity: 1; }
+  82%  { opacity: 1; }
+  100% { transform: translateY(300%); opacity: 0; }
+}
+
+/* Scroll label: soft opacity breathing in sync with the cue */
+@keyframes scroll-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
 }
 
 /* Section number counter label */

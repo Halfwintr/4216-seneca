@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Cormorant_Garamond, Figtree, Inter } from "next/font/google";
 import { LenisProvider } from "@/components/LenisProvider";
 import "./globals.css";
+
+// Figtree stands in for Gibson (the licensed Monotype face used in the Figma
+// design) — a close, free geometric-humanist sans. It's the primary UI face.
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-figtree",
+  display: "swap",
+});
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -19,13 +28,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "4216 Seneca Ave — St. Elmo, Chattanooga",
+  title: {
+    default: "Love That For You — Property Story Engine",
+    template: "%s · Love That For You",
+  },
   description:
-    "A historic home in St. Elmo. Nearly half an acre, original woodwork, a backyard that grows quiet as you move through it.",
+    "Transform ordinary listing photos into immersive cinematic property stories.",
   openGraph: {
-    title: "4216 Seneca Ave — St. Elmo, Chattanooga",
+    title: "Love That For You — Property Story Engine",
     description:
-      "A house that has held a hundred years of morning light.",
+      "High-end property marketing from assets agents already have.",
     type: "website",
   },
 };
@@ -36,11 +48,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cormorant.variable} ${inter.variable} h-full`}
+      className={`${figtree.variable} ${cormorant.variable} ${inter.variable} h-full`}
     >
-      <head>
-        <link rel="preload" href="/scenes/arrival-001/frame-00.webp" as="image" />
-      </head>
       <body className="min-h-full bg-stone-950 text-stone-100 font-sans antialiased">
         <LenisProvider>{children}</LenisProvider>
       </body>

@@ -44,12 +44,14 @@ if (!splat || !id) {
 }
 
 const frames = Number(args.frames ?? 60);
-const zoom = Number(args.zoom ?? 0.08);
-const width = Number(args.width ?? 1440);
-const height = Number(args.height ?? 810);
+const zoom = Number(args.zoom ?? 0.03);
+const start = Number(args.start ?? 0);
+const fov = Number(args.fov ?? 46.8);
+const width = Number(args.width ?? 2560);
+const height = Number(args.height ?? 1440);
 const baseUrl = args.base ?? "http://localhost:3000";
 const format = (args.format ?? "webp").toLowerCase();
-const quality = Number(args.quality ?? 80);
+const quality = Number(args.quality ?? 90);
 const fileExt = format === "jpeg" ? "jpg" : format;
 
 const outDir = join(projectRoot, "public", "scenes", id);
@@ -68,7 +70,7 @@ async function main() {
     deviceScaleFactor: 1,
   });
 
-  const captureUrl = `${baseUrl}/capture?splat=${encodeURIComponent(splat)}&frames=${frames}&zoom=${zoom}`;
+  const captureUrl = `${baseUrl}/capture?splat=${encodeURIComponent(splat)}&frames=${frames}&zoom=${zoom}&start=${start}&fov=${fov}`;
   console.log(`Opening ${captureUrl}`);
   await page.goto(captureUrl, { waitUntil: "networkidle" });
 
@@ -118,12 +120,17 @@ async function main() {
     splat,
     frameCount,
     zoom,
+    start,
+    fov,
     width,
     height,
     pad: padWidth,
     ext: fileExt,
     format,
     quality,
+    // Bake version — appended to frame URLs so a re-bake busts the browser/CDN
+    // cache (frames live at the same path across bakes).
+    bakedAt: Date.now(),
   };
   await writeFile(
     join(outDir, "manifest.json"),

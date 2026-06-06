@@ -33,7 +33,13 @@ function readParams() {
   return {
     splatUrl: params.get("splat") ?? "",
     frames: Math.max(2, Number(params.get("frames") ?? 60)),
-    zoom: Number(params.get("zoom") ?? 0.08),
+    zoom: Number(params.get("zoom") ?? 0.03),
+    // Base inward dolly offset.
+    start: Number(params.get("start") ?? 0),
+    // Camera field of view. Default matches the original framing; can be narrowed
+    // per-bake for a scene whose splat content sits small in frame (e.g. a distant
+    // outdoor subject showing a black boundary).
+    fov: Number(params.get("fov") ?? 46.8),
   };
 }
 
@@ -44,7 +50,7 @@ export default function CapturePage() {
   useEffect(() => {
     let cancelled = false;
     let viewer: GaussianSplats3D.Viewer | null = null;
-    const { splatUrl, frames, zoom } = readParams();
+    const { splatUrl, frames, zoom, start, fov } = readParams();
 
     // Keep dev-only chrome (Next.js indicator, portals) out of baked frames.
     const hideDevChrome = document.createElement("style");
@@ -66,7 +72,7 @@ export default function CapturePage() {
       try {
         const bounds = root.getBoundingClientRect();
         const camera = new THREE.PerspectiveCamera(
-          46.8,
+          fov,
           Math.max(bounds.width / Math.max(bounds.height, 1), 0.1),
           0.01,
           100
@@ -90,11 +96,14 @@ export default function CapturePage() {
           webXRMode: GaussianSplats3D.WebXRMode.None,
           logLevel: GaussianSplats3D.LogLevel.None,
           ignoreDevicePixelRatio: true,
+          // Mip-splatting-style antialiasing to remove shimmer/aliasing on the dolly.
+          antialiased: true,
           sphericalHarmonicsDegree: 0,
         });
 
         await viewer.addSplatScene(splatUrl, {
-          splatAlphaRemovalThreshold: 12,
+          // Retain faint splats (matches the lossless ksplat) for softer detail.
+          splatAlphaRemovalThreshold: 5,
           showLoadingUI: false,
           progressiveLoad: false,
           position: [0, 0, 0],
@@ -110,7 +119,7 @@ export default function CapturePage() {
           if (!viewer?.camera) return;
 
           const progress = frames <= 1 ? 0 : frameIndex / (frames - 1);
-          camera.position.set(0, 0, -zoom * progress);
+          camera.position.set(0, 0, -(start + zoom * progress));
           camera.lookAt(0, 0, -1);
           camera.updateProjectionMatrix?.();
           viewer.forceRenderNextFrame();

@@ -7,27 +7,27 @@ interface SceneManifest {
   frameCount: number;
   pad: number;
   ext: string;
+  /** Bake version; appended to frame URLs to bust caches after a re-bake. */
+  bakedAt?: number;
 }
 
 interface ScrollFrameSceneProps {
   /** Public path to the baked scene folder, e.g. /scenes/arrival-001 */
   scenePath: string;
   scrollProgress: MotionValue<number>;
-  /** Opacity of this slide; used to defer frame preload until it's approaching. */
-  layerOpacity?: MotionValue<number>;
+  /** Priority-load the first frame (e.g. the opening hero). */
   priority?: boolean;
 }
 
 function frameUrl(scenePath: string, index: number, manifest: SceneManifest) {
   const name = `frame-${String(index).padStart(manifest.pad, "0")}.${manifest.ext}`;
-  return `${scenePath}/${name}`;
+  const version = manifest.bakedAt ? `?v=${manifest.bakedAt}` : "";
+  return `${scenePath}/${name}${version}`;
 }
 
 export function ScrollFrameScene({
   scenePath,
   scrollProgress,
-  layerOpacity,
-  priority = false,
 }: ScrollFrameSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,13 +35,6 @@ export function ScrollFrameScene({
   const manifestRef = useRef<SceneManifest | null>(null);
   const lastIndexRef = useRef(-1);
   const [ready, setReady] = useState(false);
-  // Defer the (memory-heavy) frame preload until this slide is approaching, so
-  // multiple scenes in one chapter don't all decode their sequences at once.
-  const [shouldLoad, setShouldLoad] = useState(priority);
-
-  useMotionValueEvent(layerOpacity ?? scrollProgress, "change", (value) => {
-    if (!shouldLoad && value > 0.02) setShouldLoad(true);
-  });
 
   // ── Draw a frame with object-cover behavior ──────────────────────────────
   const drawIndex = (index: number) => {
@@ -91,8 +84,9 @@ export function ScrollFrameScene({
   };
 
   // ── Load manifest, paint the current frame ASAP, then preload the rest ────
+  // The parent only mounts this scene when it's in the active window, so we
+  // load on mount (no opacity deferral, which could miss menu-jump landings).
   useEffect(() => {
-    if (!shouldLoad) return;
     let cancelled = false;
 
     const loadFrame = (index: number, manifest: SceneManifest) =>
@@ -109,7 +103,9 @@ export function ScrollFrameScene({
 
     async function load() {
       try {
-        const res = await fetch(`${scenePath}/manifest.json`);
+        // Revalidate the manifest so a re-bake's new version is picked up
+        // (the frame URLs then carry that version to bust their own caches).
+        const res = await fetch(`${scenePath}/manifest.json`, { cache: "no-cache" });
         if (!res.ok) throw new Error(`manifest ${res.status}`);
         const manifest = (await res.json()) as SceneManifest;
         if (cancelled) return;
@@ -141,7 +137,7 @@ export function ScrollFrameScene({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenePath, shouldLoad]);
+  }, [scenePath]);
 
   // ── Redraw on scroll ─────────────────────────────────────────────────────
   useMotionValueEvent(scrollProgress, "change", (value) => {

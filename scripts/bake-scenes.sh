@@ -39,13 +39,13 @@ for id in "$@"; do
     echo "  SHARP predict…"
     PYTHONUNBUFFERED=1 "$VENV/bin/sharp" predict -i "$indir" -o "$outdir" --device mps --no-render
     echo "  convert -> ksplat…"
-    KSPLAT_MIN_ALPHA=24 KSPLAT_COMPRESSION=2 node --max-old-space-size=8192 "$ROOT/scripts/convert-splat.mjs" "$outdir/$id.ply" "$ksplat"
+    KSPLAT_MIN_ALPHA=5 KSPLAT_COMPRESSION=0 node --max-old-space-size=8192 "$ROOT/scripts/convert-splat.mjs" "$outdir/$id.ply" "$ksplat"
   else
     echo "  ksplat exists, skipping SHARP."
   fi
 
   echo "  render frames…"
-  node "$ROOT/scripts/render-splat-frames.mjs" --splat "/gaussians/$id.ksplat" --id "$id" --frames 60 --zoom 0.08 --format webp --quality 80
+  node "$ROOT/scripts/render-splat-frames.mjs" --splat "/gaussians/$id.ksplat" --id "$id" --frames 60 --zoom 0.03 --start 0 --fov 46.8 --width 2560 --height 1440 --format webp --quality 90
 done
 
 echo "BAKE_ALL_DONE"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import {
   motion,
   useMotionValueEvent,
@@ -8,11 +8,11 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { getMomentVh, type Chapter, type Moment, type TextAlign } from "./chapters";
+import { getMomentVh, isSceneShot, type Scene, type Moment } from "@/lib/types";
 import { SceneImageLayer } from "./SceneImageLayer";
 import { ScrollFrameScene } from "./ScrollFrameScene";
-import { getFrameSceneForImage } from "./frameScenes";
 import { getSplatSceneForImage, setActiveSplatIndex } from "./splatScenes";
+import { useScrollCue } from "./useScrollCue";
 
 // ─── Animation constants (all in virtual-pixel vh units) ─────────────────────
 //
@@ -163,36 +163,6 @@ function ChapterOverlay() {
   );
 }
 
-// ─── Text-area radial gradient ────────────────────────────────────────────────
-
-function textAreaRadial(align: TextAlign, isTitle: boolean): string {
-  const rx = isTitle ? "100% 88%" : "90% 76%";
-  const origins: Record<TextAlign, string> = {
-    left:   `ellipse ${rx} at 8%  96%`,
-    center: `ellipse ${rx} at 50% 84%`,
-    right:  `ellipse ${rx} at 92% 96%`,
-  };
-  const alpha = isTitle ? "0.90" : "0.80";
-  return `radial-gradient(${origins[align]}, rgba(6,4,2,${alpha}) 0%, rgba(6,4,2,0.30) 42%, transparent 66%)`;
-}
-
-// ─── Text positioning ─────────────────────────────────────────────────────────
-
-const containerClass: Record<TextAlign, string> = {
-  left:
-    "absolute bottom-16 sm:bottom-20 md:bottom-24 left-6 sm:left-10 md:left-14 lg:left-20",
-  center:
-    "absolute bottom-[26%] inset-x-0 flex flex-col items-center",
-  right:
-    "absolute bottom-16 sm:bottom-20 md:bottom-24 right-6 sm:right-10 md:right-14 lg:right-20",
-};
-
-const textAlignClass: Record<TextAlign, string> = {
-  left: "text-left",
-  center: "text-center",
-  right: "text-right",
-};
-
 // ─── MomentImageLayer ─────────────────────────────────────────────────────────
 
 interface MomentImageLayerProps {
@@ -222,7 +192,7 @@ function MomentImageLayer({
   const slotStart = slot.startVh / totalScrollVh;
   const slotEnd   = slot.endVh   / totalScrollVh;
   const slotProgress = useTransform(scrollYProgress, [slotStart, slotEnd], [0, 1], { clamp: true });
-  const frameScene = getFrameSceneForImage(slot.moment.image);
+  const frameSequencePath = slot.moment.frameSequencePath;
   const splatScene = getSplatSceneForImage(slot.moment.image);
 
   return (
@@ -231,11 +201,10 @@ function MomentImageLayer({
       className="absolute inset-0 pointer-events-none"
       style={{ opacity }}
     >
-      {frameScene ? (
+      {frameSequencePath ? (
         <ScrollFrameScene
-          scenePath={frameScene.path}
+          scenePath={frameSequencePath}
           scrollProgress={slotProgress}
-          layerOpacity={opacity}
           priority={priority}
         />
       ) : (
@@ -260,13 +229,28 @@ interface MomentTextLayerProps {
   slot: Slot;
   totalScrollVh: number;
   scrollYProgress: MotionValue<number>;
+  sceneNumber: string;
+  sceneLabel: string;
+  /** When true, the copy is fully visible at scroll 0 (opening hero). */
+  startVisible?: boolean;
 }
 
-function MomentTextLayer({ slot, totalScrollVh, scrollYProgress }: MomentTextLayerProps) {
+function MomentTextLayer({
+  slot,
+  totalScrollVh,
+  scrollYProgress,
+  sceneNumber,
+  sceneLabel,
+  startVisible = false,
+}: MomentTextLayerProps) {
   const { moment } = slot;
-  const align = moment.align ?? "left";
 
-  const [pKeys, oKeys] = makeTextKeyframes(slot, totalScrollVh);
+  const [pKeys, oKeysRaw] = makeTextKeyframes(slot, totalScrollVh);
+  // For the opening hero, hold opacity at 1 through the entry window so the
+  // headline is readable on first paint (no fade-in-on-scroll required).
+  const oKeys = startVisible
+    ? oKeysRaw.map((v, i) => (i <= 1 ? 1 : v))
+    : oKeysRaw;
   const opacity = useTransform(scrollYProgress, pKeys, oKeys);
 
   // Text enters from slightly below, exits upward — restrained, not theatrical
@@ -275,67 +259,72 @@ function MomentTextLayer({ slot, totalScrollVh, scrollYProgress }: MomentTextLay
   const y = useTransform(
     scrollYProgress,
     [0, textInFrac, textOutFrac, 1],
-    [22, 0, 0, -14],
+    [startVisible ? 0 : 22, 0, 0, -14],
     { clamp: true }
   );
+
+  const body = moment.isTitle ? moment.subtitle : moment.body;
+  const { scrolled, segmentTop } = useScrollCue(1 / 3);
 
   return (
     <motion.div
       className="absolute inset-0 z-20 pointer-events-none"
       style={{ opacity }}
     >
-      {/* Per-moment text-area radial — a soft pool of darkness around the copy */}
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{ background: textAreaRadial(align, !!moment.isTitle) }}
-      />
+      <motion.div
+        className="absolute bottom-[118px] left-0 right-0 flex items-center gap-5 bg-gradient-to-b from-[#11111100] via-[#11111180] via-30% to-[#111111] px-5 py-10 md:bottom-0 md:left-0 md:right-auto md:h-[26.13vh] md:w-[40.24vw] md:items-center md:gap-0 md:via-50% md:px-[2.31vw] md:py-[5.21vh]"
+        style={{ y }}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5 text-left md:gap-2.5">
+          <p
+            className="flex items-center gap-1 text-[14px] uppercase leading-none md:gap-1 md:text-[1.16vw] md:leading-[1.16vw]"
+            suppressHydrationWarning
+          >
+            <span className="font-sans font-semibold text-highlight">{sceneNumber}.</span>
+            <span className="font-sans font-normal text-white">{sceneLabel}</span>
+          </p>
+          <h2
+            className="font-sans font-medium uppercase text-white leading-[1.02] drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)] md:text-[48px] md:leading-[48px] md:drop-shadow-none"
+            suppressHydrationWarning
+            style={{
+              fontSize: moment.isTitle
+                ? "clamp(2rem, 2.78vw, 3rem)"
+                : "clamp(1.75rem, 2.78vw, 3rem)",
+              lineHeight: "clamp(2rem, 2.78vw, 3rem)",
+            }}
+          >
+            {moment.title}
+          </h2>
+          {body && (
+            <p
+              className="font-sans font-normal text-white/90 leading-snug drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] md:text-[24px] md:leading-[28.8px] md:text-white md:drop-shadow-none"
+              suppressHydrationWarning
+            style={{
+              fontSize: "clamp(1.125rem, 1.39vw, 1.5rem)",
+              lineHeight: "clamp(1.35rem, 1.67vw, 1.8rem)",
+            }}
+            >
+              {body}
+            </p>
+          )}
+        </div>
 
-      <motion.div className={`${containerClass[align]} max-w-2xl`} style={{ y }}>
-        {moment.isTitle ? (
-          // ── TITLE CARD MODE ───────────────────────────────────────────
-          // Large editorial serif heading + atmospheric subtitle.
-          <div className={`flex flex-col gap-5 ${textAlignClass[align]}`}>
-            {moment.eyebrow && (
-              <p className="text-[10px] tracking-[0.30em] uppercase font-sans font-light text-stone-300/65">
-                {moment.eyebrow}&thinsp;/&thinsp;{moment.title.split(" ")[0]}
-              </p>
+        {/* Mobile scroll indicator (desktop uses the filmstrip's own divider) */}
+        <div className="flex shrink-0 select-none flex-col items-center gap-2.5 self-stretch md:hidden">
+          <span className="font-sans text-[14px] leading-none text-white motion-safe:animate-[scroll-pulse_2.4s_ease-in-out_infinite]">
+            Scroll
+          </span>
+          <span className="relative w-0.5 flex-1 overflow-hidden bg-white/25 motion-reduce:bg-white">
+            {scrolled ? (
+              <motion.span
+                style={{ top: segmentTop }}
+                className="absolute inset-x-0 h-1/3 bg-white motion-reduce:hidden"
+              />
+            ) : (
+              <span className="absolute inset-x-0 top-0 h-1/3 bg-white motion-safe:animate-[scroll-cue_2.4s_ease-in-out_infinite] motion-reduce:hidden" />
             )}
-            <h2
-              className="font-serif font-light italic text-stone-50 leading-none drop-shadow-sm"
-              style={{ fontSize: "clamp(3rem, 7.5vw, 5.75rem)" }}
-            >
-              {moment.title}
-            </h2>
-            {moment.subtitle && (
-              <p
-                className="font-sans font-light text-stone-200/80 leading-relaxed max-w-lg drop-shadow-sm"
-                style={{ fontSize: "clamp(0.9rem, 1.7vw, 1.05rem)" }}
-              >
-                {moment.subtitle}
-              </p>
-            )}
-          </div>
-        ) : (
-          // ── MOMENT TEXT MODE ──────────────────────────────────────────
-          // Smaller serif heading + grounded sans body.
-          <div className={`flex flex-col gap-3 ${textAlignClass[align]}`}>
-            <h3
-              className="font-serif font-light italic text-stone-50 leading-tight drop-shadow-sm"
-              style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.75rem)" }}
-            >
-              {moment.title}
-            </h3>
-            {moment.body && (
-              <p
-                className="font-sans font-light text-stone-200/85 leading-relaxed max-w-md drop-shadow-sm"
-                style={{ fontSize: "clamp(0.875rem, 1.5vw, 1rem)" }}
-              >
-                {moment.body}
-              </p>
-            )}
-          </div>
-        )}
+          </span>
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -344,22 +333,35 @@ function MomentTextLayer({ slot, totalScrollVh, scrollYProgress }: MomentTextLay
 // ─── ChapterScene ─────────────────────────────────────────────────────────────
 
 export interface ChapterSceneProps {
-  chapter: Chapter;
-  chapterIndex: number;
-  /** Called when this chapter becomes the dominant chapter in the viewport */
-  onEnter: (id: string) => void;
+  scene: Scene;
+  sceneIndex: number;
+  /** Called when this scene becomes the dominant scene in the viewport */
+  onEnter: (key: string) => void;
+  /**
+   * Whether this scene is within the active loading window (active +/- 1). Only
+   * windowed scenes mount their heavy image/text layers (and decode sequences),
+   * so just one section's frames load at a time. The outer scroll spacer always
+   * renders, so scroll offsets and navigation anchors are unaffected.
+   */
+  inWindow: boolean;
 }
 
 export function ChapterScene({
-  chapter,
-  chapterIndex,
+  scene,
+  sceneIndex,
   onEnter,
+  inWindow,
 }: ChapterSceneProps) {
   const outerRef = useRef<HTMLDivElement>(null);
-  const [shouldRenderLayers, setShouldRenderLayers] = useState(chapterIndex === 0);
+
+  // The cinematic scroll is built only from scene shots (wide / 3D / title).
+  // Detail shots live in the carousel/lightbox, not the full-screen story.
+  // Fall back to all moments if a scene has no scene shots (so it never blanks).
+  const sceneShots = scene.moments.filter(isSceneShot);
+  const scrollMoments = sceneShots.length > 0 ? sceneShots : scene.moments;
 
   // Pre-compute geometry: each moment's vh range and total scroll distance
-  const { slots, totalScrollVh } = computeSlots(chapter.moments);
+  const { slots, totalScrollVh } = computeSlots(scrollMoments);
 
   // Chapter outer div height = scroll space + 1 viewport of breathing room.
   // The sticky inner stays pinned while the scroll space drains.
@@ -394,37 +396,21 @@ export function ChapterScene({
     const el = outerRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      (entries) => { for (const e of entries) { if (e.isIntersecting) onEnter(chapter.id); } },
+      (entries) => { for (const e of entries) { if (e.isIntersecting) onEnter(scene.key); } },
       { threshold: 0.05 }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [chapter.id, onEnter]);
+  }, [scene.key, onEnter]);
 
-  // Only mount the expensive full-screen image/text layers while this chapter is
-  // close enough to matter. The outer scroll height stays intact, so the scene
-  // timing and navigation do not shift.
-  useEffect(() => {
-    const el = outerRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setShouldRenderLayers(entry.isIntersecting),
-      { rootMargin: "150% 0px", threshold: 0 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  // First chapter starts with its first image fully visible (no fade-from-black
-  // on page load). All subsequent chapters fade in over CHAPTER_IN_VH.
-  const startsVisible = chapterIndex === 0;
+  // First scene starts with its first image fully visible (no fade-from-black
+  // on page load). All subsequent scenes fade in over CHAPTER_IN_VH.
+  const startsVisible = sceneIndex === 0;
 
   return (
     <div
       ref={outerRef}
-      id={chapter.id}
+      id={scene.key}
       style={{ height: `${chapterVh}vh` }}
       className="relative"
     >
@@ -435,17 +421,17 @@ export function ChapterScene({
       <div className="sticky top-0 h-screen overflow-hidden">
 
         {/* ── IMAGE LAYERS (z-0) ─────────────────────────────────────────── */}
-        {shouldRenderLayers && slots.map((slot, i) => (
+        {inWindow && slots.map((slot, i) => (
           <MomentImageLayer
             key={`img-${i}-${slot.moment.image}`}
-            chapterId={chapter.id}
+            chapterId={scene.key}
             slot={slot}
             totalScrollVh={totalScrollVh}
             scrollYProgress={scrollYProgress}
             startsVisible={startsVisible && slot.isFirst}
             preloadSplatUrl={getSplatSceneForImage(slots[i + 1]?.moment.image ?? "")?.url}
             // Priority-load only the opening hero image.
-            priority={chapterIndex === 0 && slot.isFirst}
+            priority={sceneIndex === 0 && slot.isFirst}
           />
         ))}
 
@@ -453,12 +439,15 @@ export function ChapterScene({
         <ChapterOverlay />
 
         {/* ── TEXT LAYERS (z-20) ─────────────────────────────────────────── */}
-        {shouldRenderLayers && slots.map((slot, i) => (
+        {inWindow && slots.map((slot, i) => (
           <MomentTextLayer
             key={`txt-${i}-${slot.moment.image}`}
             slot={slot}
             totalScrollVh={totalScrollVh}
             scrollYProgress={scrollYProgress}
+            sceneNumber={String(sceneIndex + 1).padStart(2, "0")}
+            sceneLabel={scene.label}
+            startVisible={startsVisible && slot.isFirst}
           />
         ))}
 

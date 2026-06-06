@@ -3,9 +3,9 @@ export interface SplatSceneEntry {
   url: string;
 }
 
-// Scenes are now served as pre-rendered frame sequences (see frameScenes.ts),
-// which removed the live WebGL splat viewers. This list is intentionally empty;
-// the splat path remains available for any scene not yet baked to frames.
+// Scenes are now served as pre-rendered frame sequences (a moment's
+// frameSequencePath), which removed the live WebGL splat viewers. This list is
+// intentionally empty; the splat path remains available for future use.
 export const SPLAT_SCENES: SplatSceneEntry[] = [];
 
 export function getSplatSceneForImage(image: string): (SplatSceneEntry & { index: number }) | undefined {
